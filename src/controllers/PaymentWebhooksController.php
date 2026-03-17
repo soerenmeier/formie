@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\controllers;
 
 use verbb\formie\Formie;

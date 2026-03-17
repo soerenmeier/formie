@@ -52,5 +52,11 @@
         "handle": "formie",
         "changelogUrl": "https://raw.githubusercontent.com/verbb/formie/craft-5/CHANGELOG.md",
         "class": "verbb\\formie\\Formie"
+    },
+    "config": {
+        "allow-plugins": {
+            "craftcms/plugin-installer": true,
+            "yiisoft/yii2-composer": true
+        }
     }
 }

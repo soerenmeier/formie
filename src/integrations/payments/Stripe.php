@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\integrations\payments;
 
 use verbb\formie\Formie;
@@ -57,7 +58,7 @@ class Stripe extends Payment
     public const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
     // https://stripe.com/docs/currencies#zero-decimal
-    private const ZERO_DECIMAL_CURRENCIES = ['BIF','CLP','DJF','GNF','JPY','KMF','KRW','MGA','PYG','RWF','UGX','VND','VUV','XAF','XOF','XPF'];
+    private const ZERO_DECIMAL_CURRENCIES = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'];
 
 
     // Static Methods
@@ -1201,6 +1202,41 @@ class Stripe extends Payment
                 }
 
                 Formie::$plugin->getPayments()->savePayment($payment);
+
+                // When the webhook confirms success, complete the submission here — this is the
+                // authoritative path. The callback (processCallback) may have already done this
+                // if the user's redirect completed, so we check isIncomplete first to avoid
+                // firing notifications/integrations twice.
+                if ($paymentIntentStatus !== PaymentIntent::STATUS_SUCCEEDED) {
+                    return;
+                }
+
+                $submission = $payment->getSubmission();
+
+                if ($submission && $submission->isIncomplete) {
+                    $submission->isIncomplete = false;
+                    Craft::$app->getElements()->saveElement($submission, false);
+
+                    $event = new SubmissionEvent([
+                        'submission' => $submission,
+                        'submitAction' => 'submit',
+                        'success' => true,
+                    ]);
+                    Formie::$plugin->getSubmissions()->trigger(Submissions::EVENT_AFTER_SUBMISSION, $event);
+
+                    if (!$submission->isIncomplete) {
+                        if ($event->success) {
+                            // Send off some emails, if all good!
+                            Formie::$plugin->getSubmissions()->sendNotifications($event->submission);
+
+                            // Trigger any integrations
+                            Formie::$plugin->getSubmissions()->triggerIntegrations($event->submission);
+                        } else if ($submission->isSpam && $settings->spamEmailNotifications) {
+                            // Special-case for wanting to send emails for spam
+                            Formie::$plugin->getSubmissions()->sendNotifications($event->submission);
+                        }
+                    }
+                }
             }
         }
     }
@@ -1238,7 +1274,8 @@ class Stripe extends Payment
         $payload['nickname'] = implode(' ', [
             $submission->getForm()->title . ' form',
             self::fromStripeAmount($amount, $currency),
-            $currency, 'x' . $frequencyValue,
+            $currency,
+            'x' . $frequencyValue,
             $frequencyType,
         ]);
 
