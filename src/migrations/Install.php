@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\migrations;
 
 use verbb\formie\Formie;
@@ -52,7 +53,7 @@ class Install extends Migration
     protected function afterUp(): void
     {
         $this->insertDefaultData();
-        
+
         parent::afterUp();
     }
 
@@ -229,6 +230,7 @@ class Install extends Migration
             'code' => $this->string(),
             'message' => $this->text(),
             'redirectUrl' => $this->text(),
+            'submissionFinalized' => $this->boolean()->notNull()->defaultValue(false),
             'note' => $this->mediumText(),
             'response' => $this->text(),
             'dateCreated' => $this->dateTime()->notNull(),

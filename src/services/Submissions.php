@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\services;
 
 use verbb\formie\Formie;
@@ -188,6 +189,11 @@ class Submissions extends Component
             $success = false;
         }
 
+        // Another request has already completed this payment and run the submission actions.
+        if ($submission->skipAfterSubmissionActions) {
+            return;
+        }
+
         // Fire an 'afterSubmission' event
         $event = new SubmissionEvent([
             'submission' => $submission,
@@ -323,7 +329,7 @@ class Submissions extends Component
                 if (!$fieldPage || !$currentPage || $fieldPage->id !== $currentPage->id) {
                     continue;
                 }
-                
+
                 if ($paymentIntegration = $field->getPaymentIntegration()) {
                     // Set the payment field on the integration, for ease-of-use
                     $paymentIntegration->setField($field);
@@ -588,7 +594,7 @@ class Submissions extends Component
     public function restoreUserSubmissions(Event $event): void
     {
         App::maxPowerCaptain();
-        
+
         /** @var User $user */
         $user = $event->sender;
 
@@ -680,7 +686,7 @@ class Submissions extends Component
 
         // Check if we've moved fields in or our of Group fields. Their content needs to be re-arranged.
         // More performant if we don't spin up the queue job unless we need to
-        $hasGroupField = array_filter($form->getFields(), function($field) {
+        $hasGroupField = array_filter($form->getFields(), function ($field) {
             return $field instanceof formiefields\Group;
         });
 

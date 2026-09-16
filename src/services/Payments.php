@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\services;
 
 use verbb\formie\Formie;
@@ -91,6 +92,28 @@ class Payments extends Component
         $this->trigger(self::EVENT_DEFINE_PAYMENT_SUCCESS_REDIRECT_URL, $event);
 
         return $event->redirectUrl;
+    }
+
+    public function claimPaymentFinalization(Payment $payment): bool
+    {
+        if (!$payment->id) {
+            return false;
+        }
+
+        $rowsAffected = Db::update(Table::FORMIE_PAYMENTS, [
+            'submissionFinalized' => true,
+        ], [
+            'id' => $payment->id,
+            'submissionFinalized' => false,
+        ]);
+
+        // Whether this request won or another request got there first, don't allow a
+        // subsequent save of this model to reset the finalization marker.
+        $payment->submissionFinalized = true;
+
+        $this->_payments = null;
+
+        return (bool)$rowsAffected;
     }
 
     public function savePayment(Payment $payment, bool $runValidation = true): bool
@@ -194,7 +217,7 @@ class Payments extends Component
 
     // Private Methods
     // =========================================================================
-    
+
     private function _payments(): MemoizableArray
     {
         if (!isset($this->_payments)) {
@@ -226,6 +249,7 @@ class Payments extends Component
                 'code',
                 'message',
                 'redirectUrl',
+                'submissionFinalized',
                 'note',
                 'response',
                 'dateCreated',

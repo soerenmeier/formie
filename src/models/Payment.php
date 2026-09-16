@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\models;
 
 use verbb\formie\Formie;
@@ -38,6 +39,7 @@ class Payment extends Model
     public ?string $code = null;
     public ?string $message = null;
     public ?string $redirectUrl = null;
+    public bool $submissionFinalized = false;
     public string $note = '';
     public ?array $response = null;
     public ?DateTime $dateCreated = null;

@@ -58,7 +58,7 @@ class Stripe extends Payment
     public const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
     // https://stripe.com/docs/currencies#zero-decimal
-    private const ZERO_DECIMAL_CURRENCIES = ['BIF','CLP','DJF','GNF','JPY','KMF','KRW','MGA','PYG','RWF','UGX','VND','VUV','XAF','XOF','XPF'];
+    private const ZERO_DECIMAL_CURRENCIES = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'];
     private const STRIPE_EVENT_PAYMENT_INTENT_PROCESSING = 'payment_intent.processing';
     private const STRIPE_PAYMENT_INTENT_STATUS_PROCESSING = 'processing';
 
@@ -397,11 +397,17 @@ class Stripe extends Payment
                         $payment = Formie::$plugin->getPayments()->getPaymentByReference($paymentIntent->id);
 
                         if ($payment) {
-                            $payment->status = $this->_getPaymentStatusFromPaymentIntentStatus($paymentIntent->status);
+                            $paymentStatus = $this->_getPaymentStatusFromPaymentIntentStatus($paymentIntent->status);
+
+                            $payment->status = $paymentStatus;
                             $payment->reference = $paymentIntent->id;
                             $payment->response = $paymentIntent->toArray();
 
                             Formie::$plugin->getPayments()->savePayment($payment);
+
+                            if (!Formie::$plugin->getPayments()->claimPaymentFinalization($payment)) {
+                                $submission->skipAfterSubmissionActions = true;
+                            }
                         } else {
                             throw new Exception('Unable to find payment by "' . $paymentIntent->id . '".');
                         }
@@ -597,11 +603,15 @@ class Stripe extends Payment
                 throw new Exception('Payment Intent ' . $paymentIntentId . ' ' . $paymentIntent->status);
             }
 
-            // Complete the submission and lodge the payment
-            $payment->status = $this->_getPaymentStatusFromPaymentIntentStatus($paymentIntent->status);
+            // Complete the submission and lodge the payment. For successful Payment Intents,
+            // only the request that atomically claims the payment may run submission actions.
+            $paymentStatus = $this->_getPaymentStatusFromPaymentIntentStatus($paymentIntent->status);
+            $payment->status = $paymentStatus;
             $payment->reference = $paymentIntentId;
 
             Formie::$plugin->getPayments()->savePayment($payment);
+
+            $shouldCompleteSubmission = Formie::$plugin->getPayments()->claimPaymentFinalization($payment);
 
             Formie::$plugin->getService()->setFlash($form->id, 'submitted', true);
             Formie::$plugin->getService()->setNotice($form->id, $form->settings->getSubmitActionMessage($submission));
@@ -610,29 +620,31 @@ class Stripe extends Payment
             $form->resetCurrentPage();
             $form->resetCurrentSubmission();
 
-            $submission->isIncomplete = false;
-            Craft::$app->getElements()->saveElement($submission, false);
+            if ($shouldCompleteSubmission) {
+                $submission->isIncomplete = false;
+                Craft::$app->getElements()->saveElement($submission, false);
 
-            // Fire an 'afterSubmission' event
-            $event = new SubmissionEvent([
-                'submission' => $submission,
-                'submitAction' => 'submit',
-                'success' => true,
-            ]);
-            Formie::$plugin->getSubmissions()->trigger(Submissions::EVENT_AFTER_SUBMISSION, $event);
+                // Fire an 'afterSubmission' event
+                $event = new SubmissionEvent([
+                    'submission' => $submission,
+                    'submitAction' => 'submit',
+                    'success' => true,
+                ]);
+                Formie::$plugin->getSubmissions()->trigger(Submissions::EVENT_AFTER_SUBMISSION, $event);
 
-            if (!$submission->isIncomplete) {
-                $settings = Formie::$plugin->getSettings();
+                if (!$submission->isIncomplete) {
+                    $settings = Formie::$plugin->getSettings();
 
-                if ($event->success) {
-                    // Send off some emails, if all good!
-                    Formie::$plugin->getSubmissions()->sendNotifications($event->submission);
+                    if ($event->success) {
+                        // Send off some emails, if all good!
+                        Formie::$plugin->getSubmissions()->sendNotifications($event->submission);
 
-                    // Trigger any integrations
-                    Formie::$plugin->getSubmissions()->triggerIntegrations($event->submission);
-                } else if ($submission->isSpam && $settings->spamEmailNotifications) {
-                    // Special-case for wanting to send emails for spam
-                    Formie::$plugin->getSubmissions()->sendNotifications($event->submission);
+                        // Trigger any integrations
+                        Formie::$plugin->getSubmissions()->triggerIntegrations($event->submission);
+                    } else if ($submission->isSpam && $settings->spamEmailNotifications) {
+                        // Special-case for wanting to send emails for spam
+                        Formie::$plugin->getSubmissions()->sendNotifications($event->submission);
+                    }
                 }
             }
         } catch (Throwable $e) {
@@ -1208,14 +1220,19 @@ class Stripe extends Payment
             $payment = Formie::$plugin->getPayments()->getPaymentByReference($paymentIntentId);
 
             if ($payment) {
-                $payment->status = $this->_getPaymentStatusFromPaymentIntentStatus($paymentIntentStatus);
+                $paymentStatus = $this->_getPaymentStatusFromPaymentIntentStatus($paymentIntentStatus);
+
+                $payment->status = $paymentStatus;
 
                 Formie::$plugin->getPayments()->savePayment($payment);
 
-                // When the webhook confirms success, complete the submission here — this is the
-                // authoritative path. The callback (processCallback) may have already done this
-                // if the user's redirect completed, so we check isIncomplete first to avoid
-                // firing notifications/integrations twice.
+                if ($paymentStatus === PaymentModel::STATUS_SUCCESS && !Formie::$plugin->getPayments()->claimPaymentFinalization($payment)) {
+                    return;
+                }
+
+                // When the webhook confirms success, complete the submission if this request
+                // claimed finalization. Browser resubmissions, callbacks, polling, duplicate
+                // webhooks, and this handler all share the same atomic claim.
                 if ($paymentIntentStatus !== PaymentIntent::STATUS_SUCCEEDED) {
                     return;
                 }
@@ -1234,6 +1251,8 @@ class Stripe extends Payment
                     Formie::$plugin->getSubmissions()->trigger(Submissions::EVENT_AFTER_SUBMISSION, $event);
 
                     if (!$submission->isIncomplete) {
+                        $settings = Formie::$plugin->getSettings();
+
                         if ($event->success) {
                             // Send off some emails, if all good!
                             Formie::$plugin->getSubmissions()->sendNotifications($event->submission);

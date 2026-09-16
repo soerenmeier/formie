@@ -128,8 +128,8 @@ class PaymentWebhooksController extends Controller
                 ]);
             }
 
-            // Has this submission already been marked as completed?
-            if (!$submission->isIncomplete) {
+            // Only one callback, webhook, browser resubmission, or poll may finalize the submission.
+            if (!Formie::$plugin->getPayments()->claimPaymentFinalization($payment) || !$submission->isIncomplete) {
                 Formie::info('Payment poll: submission already completed (paymentUid {paymentUid}, submissionId {submissionId})', [
                     'paymentUid' => $paymentUid,
                     'submissionId' => $submission->id,

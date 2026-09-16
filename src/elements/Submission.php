@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie\elements;
 
 use verbb\formie\Formie;
@@ -306,7 +307,7 @@ class Submission extends CustomElement
             ],
         ];
     }
-    
+
 
     // Properties
     // =========================================================================
@@ -323,6 +324,7 @@ class Submission extends CustomElement
     public array $snapshot = [];
     public ?bool $validateCurrentPageOnly = null;
     public bool $isNewSubmission = false;
+    public bool $skipAfterSubmissionActions = false;
 
     private ?Form $_form = null;
     private ?Status $_status = null;
@@ -344,7 +346,7 @@ class Submission extends CustomElement
     {
         return (string)$this->title;
     }
-    
+
     public function canView(User $user): bool
     {
         if (parent::canView($user)) {
@@ -368,7 +370,7 @@ class Submission extends CustomElement
 
         return true;
     }
-    
+
     public function canSave(User $user): bool
     {
         if (parent::canView($user)) {
@@ -483,7 +485,7 @@ class Submission extends CustomElement
 
         $icon = null;
         $label = null;
-        
+
         // Swap out the different icons for status/spam/etc
         if ($element->isIncomplete) {
             $icon = 'draft';
@@ -752,7 +754,7 @@ class Submission extends CustomElement
     public function setFieldSettings(string $handle, array $settings): void
     {
         $field = null;
-        
+
         // Check for nested fields so we can use `group.dropdown` or `dropdown`.
         $handles = explode('.', $handle);
 
@@ -854,7 +856,7 @@ class Submission extends CustomElement
                 $status = $foundStatus;
             }
         }
-        
+
         $this->_status = $status;
         $this->statusId = $status->id;
     }
@@ -1270,7 +1272,7 @@ class Submission extends CustomElement
         // Check to see if we need to save any relations
         Formie::$plugin->getRelations()->saveRelations($this);
 
-        // If the status has changed, fire any applicable email notifications. 
+        // If the status has changed, fire any applicable email notifications.
         // Also check for `isNewSubmission` to see whether we're submitting something new, or just resaving.
         if (!$this->isNewSubmission && $this->hasStatusChanged()) {
             // Only send notifications that match a status-change condition
@@ -1418,11 +1420,11 @@ class Submission extends CustomElement
             $form = $this->getForm();
 
             return $form->title ?? '';
-        } 
+        }
 
         if ($attribute == 'userId') {
             $user = $this->getUser();
-            
+
             return $user ? Cp::elementChipHtml($user) : '';
         }
 
@@ -1430,12 +1432,12 @@ class Submission extends CustomElement
             $status = $this->getStatusModel();
 
             return Html::tag('span', Html::tag('span', '', [
-                    'class' => array_filter([
-                        'status',
-                        $status->handle ?? null,
-                        $status->color ?? null,
-                    ]),
-                ]) . ($status->name ?? null), [
+                'class' => array_filter([
+                    'status',
+                    $status->handle ?? null,
+                    $status->color ?? null,
+                ]),
+            ]) . ($status->name ?? null), [
                 'style' => [
                     'display' => 'flex',
                     'align-items' => 'center',
@@ -1454,8 +1456,8 @@ class Submission extends CustomElement
                 }
 
                 return Html::tag('span', Html::tag('span', '', [
-                        'class' => ['status', $color],
-                    ]) . StringHelper::toTitleCase($lastPayment->status), [
+                    'class' => ['status', $color],
+                ]) . StringHelper::toTitleCase($lastPayment->status), [
                     'style' => [
                         'display' => 'flex',
                         'align-items' => 'center',

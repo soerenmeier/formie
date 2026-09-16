@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\formie;
 
 use verbb\formie\base\PluginTrait;
@@ -98,13 +99,13 @@ class Formie extends Plugin
 
     public const EVENT_MODIFY_TWIG_ENVIRONMENT = 'modifyTwigEnvironment';
 
-    
+
     // Properties
     // =========================================================================
 
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
-    public string $schemaVersion = '3.4.12';
+    public string $schemaVersion = '3.4.13';
     public string $minVersionRequired = '2.1.5';
 
 
@@ -224,7 +225,7 @@ class Formie extends Plugin
 
     public function _registerSiteRoutes(): void
     {
-        Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_SITE_URL_RULES, function(RegisterUrlRulesEvent $event) {
+        Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_SITE_URL_RULES, function (RegisterUrlRulesEvent $event) {
             $event->rules['formie/integrations/callback'] = 'formie/integrations/callback';
             $event->rules['formie/payment-webhooks/process-webhook'] = 'formie/payment-webhooks/process-webhook';
             $event->rules['formie/payment-webhooks/process-callback'] = 'formie/payment-webhooks/process-callback';
@@ -232,10 +233,10 @@ class Formie extends Plugin
             $event->rules['formie/payment-webhooks/poll-status'] = 'formie/payment-webhooks/poll-status';
         });
     }
-    
+
     public function _registerCpRoutes(): void
     {
-        Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_CP_URL_RULES, function(RegisterUrlRulesEvent $event) {
+        Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_CP_URL_RULES, function (RegisterUrlRulesEvent $event) {
             $event->rules['formie'] = 'formie/base/index';
 
             $event->rules['formie/forms'] = 'formie/forms/index';
@@ -313,7 +314,7 @@ class Formie extends Plugin
 
     private function _registerPermissions(): void
     {
-        Event::on(UserPermissions::class, UserPermissions::EVENT_REGISTER_PERMISSIONS, function(RegisterUserPermissionsEvent $event) {
+        Event::on(UserPermissions::class, UserPermissions::EVENT_REGISTER_PERMISSIONS, function (RegisterUserPermissionsEvent $event) {
             $formPermissions = [
                 'formie-createForms' => [
                     'label' => Craft::t('formie', 'Create forms'),
@@ -333,7 +334,8 @@ class Formie extends Plugin
                         'formie-showFormAppearance' => ['label' => Craft::t('formie', 'Show form appearance tab')],
                         'formie-showFormBehavior' => ['label' => Craft::t('formie', 'Show form behaviour tab')],
                         'formie-showNotifications' => [
-                            'label' => Craft::t('formie', 'Show form email notifications tab'), 'nested' => [
+                            'label' => Craft::t('formie', 'Show form email notifications tab'),
+                            'nested' => [
                                 'formie-showNotificationsAdvanced' => ['label' => Craft::t('formie', 'Show email notification advanced tab')],
                                 'formie-showNotificationsTemplates' => ['label' => Craft::t('formie', 'Show email notification templates tab')],
                             ],
@@ -376,7 +378,8 @@ class Formie extends Plugin
                             "formie-showFormAppearance{$suffix}" => ['label' => Craft::t('formie', 'Show form appearance tab')],
                             "formie-showFormBehavior{$suffix}" => ['label' => Craft::t('formie', 'Show form behaviour tab')],
                             "formie-showNotifications{$suffix}" => [
-                                'label' => Craft::t('formie', 'Show form email notifications tab'), 'nested' => [
+                                'label' => Craft::t('formie', 'Show form email notifications tab'),
+                                'nested' => [
                                     "formie-showNotificationsAdvanced{$suffix}" => ['label' => Craft::t('formie', 'Show email notification advanced tab')],
                                     "formie-showNotificationsTemplates{$suffix}" => ['label' => Craft::t('formie', 'Show email notification templates tab')],
                                 ],
@@ -420,14 +423,14 @@ class Formie extends Plugin
 
     private function _registerVariable(): void
     {
-        Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, function(Event $event) {
+        Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, function (Event $event) {
             $event->sender->set('formie', FormieVariable::class);
         });
     }
 
     private function _registerElementTypes(): void
     {
-        Event::on(Elements::class, Elements::EVENT_REGISTER_ELEMENT_TYPES, function(RegisterComponentTypesEvent $event) {
+        Event::on(Elements::class, Elements::EVENT_REGISTER_ELEMENT_TYPES, function (RegisterComponentTypesEvent $event) {
             $event->types[] = Form::class;
             $event->types[] = SentNotification::class;
             $event->types[] = Submission::class;
@@ -436,7 +439,7 @@ class Formie extends Plugin
 
     private function _registerFieldTypes(): void
     {
-        Event::on(Fields::class, Fields::EVENT_REGISTER_FIELD_TYPES, function(RegisterComponentTypesEvent $event) {
+        Event::on(Fields::class, Fields::EVENT_REGISTER_FIELD_TYPES, function (RegisterComponentTypesEvent $event) {
             $event->types[] = Forms::class;
             $event->types[] = Submissions::class;
         });
@@ -444,7 +447,7 @@ class Formie extends Plugin
 
     private function _registerGarbageCollection(): void
     {
-        Event::on(Gc::class, Gc::EVENT_RUN, function() {
+        Event::on(Gc::class, Gc::EVENT_RUN, function () {
             // Delete incomplete submissions older than the configured interval.
             if (Craft::$app instanceof ConsoleApplication) {
                 Console::stdout('    > purging incomplete Formie submissions ... ');
@@ -476,7 +479,7 @@ class Formie extends Plugin
 
     private function _registerGraphQl(): void
     {
-        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_TYPES, function(RegisterGqlTypesEvent $event) {
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_TYPES, function (RegisterGqlTypesEvent $event) {
             $event->types[] = FormInterface::class;
             $event->types[] = PageInterface::class;
             $event->types[] = PageSettingsInterface::class;
@@ -485,7 +488,7 @@ class Formie extends Plugin
             $event->types[] = SubmissionInterface::class;
         });
 
-        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_QUERIES, function(RegisterGqlQueriesEvent $event) {
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_QUERIES, function (RegisterGqlQueriesEvent $event) {
             $queries = [
                 FormQuery::getQueries(),
                 SubmissionQuery::getQueries(),
@@ -498,7 +501,7 @@ class Formie extends Plugin
             }
         });
 
-        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_MUTATIONS, function(RegisterGqlMutationsEvent $event) {
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_MUTATIONS, function (RegisterGqlMutationsEvent $event) {
             $mutations = [
                 SubmissionMutation::getMutations(),
             ];
@@ -510,7 +513,7 @@ class Formie extends Plugin
             }
         });
 
-        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_SCHEMA_COMPONENTS, function(RegisterGqlSchemaComponentsEvent $event) {
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_SCHEMA_COMPONENTS, function (RegisterGqlSchemaComponentsEvent $event) {
             $label = Craft::t('formie', 'Formie');
 
             $forms = Form::find()->withCustomFields(false)->all();
@@ -553,7 +556,7 @@ class Formie extends Plugin
 
         // Strip GraphQL validation "Did you mean" hints when devMode is off (Craft passes the same flag
         // into Gql::executeQuery() for validation rule selection; some rules still leak suggestions).
-        Event::on(Gql::class, Gql::EVENT_AFTER_EXECUTE_GQL_QUERY, function(ExecuteGqlQueryEvent $event): void {
+        Event::on(Gql::class, Gql::EVENT_AFTER_EXECUTE_GQL_QUERY, function (ExecuteGqlQueryEvent $event): void {
             if (Craft::$app->getConfig()->getGeneral()->devMode) {
                 return;
             }
@@ -597,20 +600,20 @@ class Formie extends Plugin
         Event::on(Search::class, Search::EVENT_BEFORE_SEARCH, [$this->getSubmissions(), 'beforeSearch']);
 
         // Add additional error information to queue jobs when there's an error
-        Event::on(Queue::class, Queue::EVENT_AFTER_ERROR, function(ExecEvent $event) {
+        Event::on(Queue::class, Queue::EVENT_AFTER_ERROR, function (ExecEvent $event) {
             if ($event->error && $event->job instanceof BaseJob) {
                 $event->job->onError($event);
             }
         });
 
-        Event::on(Plugins::class, Plugins::EVENT_BEFORE_SAVE_PLUGIN_SETTINGS, function(PluginEvent $event) {
+        Event::on(Plugins::class, Plugins::EVENT_BEFORE_SAVE_PLUGIN_SETTINGS, function (PluginEvent $event) {
             if ($event->plugin === $this) {
                 $this->getService()->onBeforeSavePluginSettings($event);
             }
         });
 
         if (class_exists(SourceNodes::class)) {
-            Event::on(SourceNodes::class, SourceNodes::EVENT_REGISTER_SOURCE_NODE_TYPES, function(RegisterSourceNodeTypesEvent $event) {
+            Event::on(SourceNodes::class, SourceNodes::EVENT_REGISTER_SOURCE_NODE_TYPES, function (RegisterSourceNodeTypesEvent $event) {
                 if (GqlHelper::canQueryForms()) {
                     $event->types[FormInterface::getName()] = [
                         'node' => 'formieForm',
@@ -634,13 +637,13 @@ class Formie extends Plugin
         }
 
         if (class_exists(FeedMeElements::class)) {
-            Event::on(FeedMeElements::class, FeedMeElements::EVENT_REGISTER_FEED_ME_ELEMENTS, function(RegisterFeedMeElementsEvent $event) {
+            Event::on(FeedMeElements::class, FeedMeElements::EVENT_REGISTER_FEED_ME_ELEMENTS, function (RegisterFeedMeElementsEvent $event) {
                 $event->elements[] = FeedMeSubmission::class;
             });
         }
 
         if (class_exists(FeedMeFields::class)) {
-            Event::on(FeedMeFields::class, FeedMeFields::EVENT_REGISTER_FEED_ME_FIELDS, function(RegisterFeedMeFieldsEvent $event) {
+            Event::on(FeedMeFields::class, FeedMeFields::EVENT_REGISTER_FEED_ME_FIELDS, function (RegisterFeedMeFieldsEvent $event) {
                 $fields = Formie::$plugin->getFields()->getRegisteredFormieFields();
 
                 $event->fields = array_merge($event->fields, $fields);
@@ -648,7 +651,7 @@ class Formie extends Plugin
         }
 
         if (version_compare(Craft::$app->getInfo()->version, '5.3.0', '>=')) {
-            Event::on(Link::class, Link::EVENT_REGISTER_LINK_TYPES, function(RegisterComponentTypesEvent $event) {
+            Event::on(Link::class, Link::EVENT_REGISTER_LINK_TYPES, function (RegisterComponentTypesEvent $event) {
                 $event->types[] = FormLinkType::class;
             });
         }
@@ -694,14 +697,14 @@ class Formie extends Plugin
             ->onUpdate(IntegrationsService::CONFIG_INTEGRATIONS_KEY . '.{uid}', [$integrationsService, 'handleChangedIntegration'])
             ->onRemove(IntegrationsService::CONFIG_INTEGRATIONS_KEY . '.{uid}', [$integrationsService, 'handleDeletedIntegration']);
 
-        Event::on(ProjectConfig::class, ProjectConfig::EVENT_REBUILD, function(RebuildConfigEvent $event) {
+        Event::on(ProjectConfig::class, ProjectConfig::EVENT_REBUILD, function (RebuildConfigEvent $event) {
             $event->config['formie'] = ProjectConfigHelper::rebuildProjectConfig();
         });
     }
 
     private function _registerEmailMessages(): void
     {
-        Event::on(SystemMessages::class, SystemMessages::EVENT_REGISTER_MESSAGES, function(RegisterEmailMessagesEvent $event) {
+        Event::on(SystemMessages::class, SystemMessages::EVENT_REGISTER_MESSAGES, function (RegisterEmailMessagesEvent $event) {
             $event->messages[] = [
                 'key' => 'formie_failed_notification',
                 'heading' => Craft::t('formie', 'formie_failed_notification_heading'),
@@ -713,7 +716,7 @@ class Formie extends Plugin
 
     private function _registerElementExports(): void
     {
-        Event::on(Form::class, Form::EVENT_REGISTER_EXPORTERS, function(RegisterElementExportersEvent $event) {
+        Event::on(Form::class, Form::EVENT_REGISTER_EXPORTERS, function (RegisterElementExportersEvent $event) {
             // Remove defaults, but allow third-party ones
             foreach ($event->exporters as $key => $exporter) {
                 if ($exporter === Raw::class) {
@@ -730,7 +733,7 @@ class Formie extends Plugin
             $event->exporters[] = FormExport::class;
         });
 
-        Event::on(Submission::class, Submission::EVENT_REGISTER_EXPORTERS, function(RegisterElementExportersEvent $event) {
+        Event::on(Submission::class, Submission::EVENT_REGISTER_EXPORTERS, function (RegisterElementExportersEvent $event) {
             // Remove defaults, but allow third-party ones
             foreach ($event->exporters as $key => $exporter) {
                 if ($exporter === Raw::class) {
@@ -750,14 +753,14 @@ class Formie extends Plugin
 
     private function _registerTemplateRoots(): void
     {
-        Event::on(View::class, View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS, function(RegisterTemplateRootsEvent $event) {
+        Event::on(View::class, View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS, function (RegisterTemplateRootsEvent $event) {
             $event->roots[$this->id] = $this->getBasePath() . DIRECTORY_SEPARATOR . 'templates/_special';
         });
     }
 
     private function _registerWidgets(): void
     {
-        Event::on(Dashboard::class, Dashboard::EVENT_REGISTER_WIDGET_TYPES, function(RegisterComponentTypesEvent $event) {
+        Event::on(Dashboard::class, Dashboard::EVENT_REGISTER_WIDGET_TYPES, function (RegisterComponentTypesEvent $event) {
             $event->types[] = RecentSubmissions::class;
         });
     }
@@ -768,11 +771,11 @@ class Formie extends Plugin
             return;
         }
 
-        Event::on(ResaveController::class, ConsoleController::EVENT_DEFINE_ACTIONS, function(DefineConsoleActionsEvent $event) {
+        Event::on(ResaveController::class, ConsoleController::EVENT_DEFINE_ACTIONS, function (DefineConsoleActionsEvent $event) {
             $event->actions['formie-forms'] = [
-                'action' => function(): int {
+                'action' => function (): int {
                     $controller = Craft::$app->controller;
-                    
+
                     return $controller->resaveElements(Form::class);
                 },
                 'options' => [],
@@ -780,7 +783,7 @@ class Formie extends Plugin
             ];
 
             $event->actions['formie-submissions'] = [
-                'action' => function(): int {
+                'action' => function (): int {
                     $controller = Craft::$app->controller;
 
                     if ($controller->formId !== null) {
@@ -810,7 +813,7 @@ class Formie extends Plugin
     private function _registerTemplateHooks(): void
     {
         // Add default captcha integrations
-        Craft::$app->getView()->hook('formie.buttons.before', static function(array $context) {
+        Craft::$app->getView()->hook('formie.buttons.before', static function (array $context) {
             return Formie::$plugin->getForms()->handleBeforeSubmitHook($context);
         });
     }
